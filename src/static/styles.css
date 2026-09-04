@@ -24,6 +24,25 @@ header {
   border-radius: 5px;
 }
 
+header form {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+header input {
+  width: 140px;
+  padding: 8px;
+  border: 0;
+  border-radius: 4px;
+}
+
+header button {
+  padding: 8px 12px;
+  background-color: #43a047;
+}
+
 header h1 {
   margin-bottom: 10px;
 }
