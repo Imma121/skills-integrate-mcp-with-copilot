@@ -3,6 +3,24 @@ document.addEventListener("DOMContentLoaded", () => {
   const activitySelect = document.getElementById("activity");
   const signupForm = document.getElementById("signup-form");
   const messageDiv = document.getElementById("message");
+  const loginForm = document.getElementById("login-form");
+  const logoutButton = document.getElementById("logout-button");
+  let teacherCredentials = sessionStorage.getItem("teacherCredentials");
+
+  function authenticatedRequestOptions(method) {
+    return {
+      method,
+      headers: teacherCredentials
+        ? { Authorization: `Basic ${teacherCredentials}` }
+        : {},
+    };
+  }
+
+  function updateAdminControls() {
+    signupForm.classList.toggle("hidden", !teacherCredentials);
+    logoutButton.classList.toggle("hidden", !teacherCredentials);
+    loginForm.classList.toggle("hidden", Boolean(teacherCredentials));
+  }
 
   // Function to fetch activities from API
   async function fetchActivities() {
@@ -30,7 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 ${details.participants
                   .map(
                     (email) =>
-                      `<li><span class="participant-email">${email}</span><button class="delete-btn" data-activity="${name}" data-email="${email}">❌</button></li>`
+                      `<li><span class="participant-email">${email}</span><button class="delete-btn ${teacherCredentials ? "" : "hidden"}" data-activity="${name}" data-email="${email}">❌</button></li>`
                   )
                   .join("")}
               </ul>
@@ -79,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
           activity
         )}/unregister?email=${encodeURIComponent(email)}`,
         {
-          method: "DELETE",
+          ...authenticatedRequestOptions("DELETE"),
         }
       );
 
@@ -123,7 +141,7 @@ document.addEventListener("DOMContentLoaded", () => {
           activity
         )}/signup?email=${encodeURIComponent(email)}`,
         {
-          method: "POST",
+          ...authenticatedRequestOptions("POST"),
         }
       );
 
@@ -155,6 +173,37 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  loginForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+    teacherCredentials = btoa(`${username}:${password}`);
+
+    const response = await fetch(
+      "/auth/login",
+      authenticatedRequestOptions("POST")
+    );
+    if (response.ok) {
+      sessionStorage.setItem("teacherCredentials", teacherCredentials);
+      loginForm.reset();
+      updateAdminControls();
+      messageDiv.textContent = "Teacher login successful.";
+      messageDiv.className = "success";
+    } else {
+      teacherCredentials = null;
+      messageDiv.textContent = "Invalid teacher credentials.";
+      messageDiv.className = "error";
+    }
+    messageDiv.classList.remove("hidden");
+  });
+
+  logoutButton.addEventListener("click", () => {
+    teacherCredentials = null;
+    sessionStorage.removeItem("teacherCredentials");
+    updateAdminControls();
+  });
+
   // Initialize app
+  updateAdminControls();
   fetchActivities();
 });
